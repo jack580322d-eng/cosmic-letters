@@ -6,7 +6,7 @@ IG / Threads 帳號 @chieh._.04（宇宙情書）的自動發文流程。
 
 1. 在 `posts/<編號>/post.json` 寫好稿子（格式見下方），`"approved": false`
 2. 審稿通過後改成 `"approved": true`
-3. 排程每週一、三、五 22:07（台北時間）自動發「待發隊列」的下一篇：編號最小、approved 為 true、還沒發完的那篇
+3. 排程每天 22:07（台北時間）自動發「待發隊列」的下一篇：編號最小、approved 為 true、還沒發完的那篇
 4. 發完會開一個 issue 提醒到 IG App 加配樂（IG API 不能加音樂）
 
 想馬上發：Actions → publish → Run workflow。`post_id` 留空就是發隊列下一篇，也可以指定編號；`target` 可選 ig / threads / both。
