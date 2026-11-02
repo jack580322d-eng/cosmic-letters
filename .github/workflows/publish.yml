@@ -1,0 +1,44 @@
+name: publish
+on:
+  workflow_dispatch:
+    inputs:
+      post_id:
+        description: "posts/ 底下的資料夾名稱，例如 001"
+        required: true
+        default: "001"
+      target:
+        description: "ig / threads / both"
+        required: true
+        default: "both"
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install renderer
+        run: |
+          pip install playwright==1.47.0
+          python -m playwright install --with-deps chromium
+          mkdir -p fonts
+          curl -sSL -o fonts/jf-openhuninn-2.1.ttf https://raw.githubusercontent.com/justfont/open-huninn-font/master/font/jf-openhuninn-2.1.ttf
+      - name: Render images
+        run: python scripts/publish.py render "${{ inputs.post_id }}"
+      - name: Commit images so they have public URLs
+        run: |
+          git config user.name "cosmic-letters-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add posts/${{ inputs.post_id }}/*.jpg
+          git commit -m "Render post ${{ inputs.post_id }}" || echo "no changes"
+          git push
+          sleep 15
+      - name: Publish
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+        run: python scripts/publish.py publish "${{ inputs.post_id }}" "${{ inputs.target }}"
