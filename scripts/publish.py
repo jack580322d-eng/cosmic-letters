@@ -105,15 +105,21 @@ def publish_ig(pid):
 
 
 def publish_threads(pid):
+    """Threads: the love line is the post itself (text only); the knowledge card goes in a self-reply."""
     post, tok = load(pid), os.environ["THREADS_ACCESS_TOKEN"]
-    kids = [call("POST", f"{TH}/me/threads", {"media_type": "IMAGE", "image_url": u, "is_carousel_item": "true",
-                                               "access_token": tok})["id"] for u in image_urls(pid)]
-    time.sleep(20)
-    car = call("POST", f"{TH}/me/threads", {"media_type": "CAROUSEL", "children": ",".join(kids),
-                                            "text": post.get("threads_text", post["caption"]), "access_token": tok})["id"]
+    main = {"media_type": "TEXT", "text": post["threads_main"], "access_token": tok}
+    if post.get("topic_tag"):
+        main["topic_tag"] = post["topic_tag"]
+    cid = call("POST", f"{TH}/me/threads", main)["id"]
+    time.sleep(10)
+    main_id = call("POST", f"{TH}/me/threads_publish", {"creation_id": cid, "access_token": tok})["id"]
+    print("Threads main post published:", main_id)
+    reply = {"media_type": "IMAGE", "image_url": image_urls(pid)[1], "text": post["threads_reply"],
+             "reply_to_id": main_id, "access_token": tok}
+    rid = call("POST", f"{TH}/me/threads", reply)["id"]
     time.sleep(30)
-    res = call("POST", f"{TH}/me/threads_publish", {"creation_id": car, "access_token": tok})
-    print("Threads published:", res)
+    res = call("POST", f"{TH}/me/threads_publish", {"creation_id": rid, "access_token": tok})
+    print("Threads reply published:", res)
 
 
 if __name__ == "__main__":
