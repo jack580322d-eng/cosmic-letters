@@ -1,9 +1,13 @@
-"""Render a post's two images and publish them as a carousel to Instagram and Threads.
+"""Render a post's two images and publish it to Instagram (carousel) and Threads (text + self-reply).
 
-Usage: python scripts/publish.py render  <post_id>
+Usage: python scripts/publish.py next                          -> prints the next approved, unpublished post id
+       python scripts/publish.py render  <post_id>
        python scripts/publish.py publish <post_id> [ig|threads|both]
+
+Each successful platform publish is recorded in posts/<id>/status.json, and a platform
+already recorded there is skipped, so re-running never double-posts.
 """
-import json, os, sys, time, pathlib, urllib.request, urllib.parse
+import json, os, sys, time, datetime, pathlib, urllib.request, urllib.parse
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 FONT = ROOT / "fonts" / "jf-openhuninn-2.1.ttf"
@@ -30,6 +34,31 @@ def post_dir(pid):
 
 def load(pid):
     return json.loads((post_dir(pid) / "post.json").read_text(encoding="utf-8"))
+
+
+def load_status(pid):
+    f = post_dir(pid) / "status.json"
+    return json.loads(f.read_text(encoding="utf-8")) if f.exists() else {}
+
+
+def save_status(pid, platform, post_id):
+    st = load_status(pid)
+    st[platform] = {"id": post_id, "at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")}
+    (post_dir(pid) / "status.json").write_text(json.dumps(st, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def next_post():
+    """Lowest-numbered post that is approved and not yet published on both platforms."""
+    for d in sorted((ROOT / "posts").iterdir()):
+        f = d / "post.json"
+        if not f.exists():
+            continue
+        if json.loads(f.read_text(encoding="utf-8")).get("approved") is not True:
+            continue
+        st = load_status(d.name)
+        if "ig" not in st or "threads" not in st:
+            return d.name
+    return ""
 
 
 def render(pid):
@@ -97,6 +126,7 @@ def publish_ig(pid):
             wait_ig(host, car, tok)
             res = call("POST", f"{host}/{uid}/media_publish", {"creation_id": car, "access_token": tok})
             print("IG published:", res, "via", host)
+            save_status(pid, "ig", res.get("id"))
             return
         except RuntimeError as e:
             last = e
@@ -114,6 +144,7 @@ def publish_threads(pid):
     time.sleep(10)
     main_id = call("POST", f"{TH}/me/threads_publish", {"creation_id": cid, "access_token": tok})["id"]
     print("Threads main post published:", main_id)
+    save_status(pid, "threads", main_id)  # recorded before the reply, so a failed reply never re-posts the main text
     reply = {"media_type": "TEXT", "text": post["threads_reply"], "reply_to_id": main_id, "access_token": tok}
     rid = call("POST", f"{TH}/me/threads", reply)["id"]
     time.sleep(30)
@@ -122,17 +153,25 @@ def publish_threads(pid):
 
 
 if __name__ == "__main__":
-    cmd, pid = sys.argv[1], sys.argv[2]
-    if cmd == "render":
-        render(pid)
+    cmd = sys.argv[1]
+    if cmd == "next":
+        print(next_post())
+    elif cmd == "render":
+        render(sys.argv[2])
     elif cmd == "publish":
+        pid = sys.argv[2]
         target = sys.argv[3] if len(sys.argv) > 3 else "both"
+        done = load_status(pid)
         errors = []
         for name, fn in (("ig", publish_ig), ("threads", publish_threads)):
-            if target in (name, "both"):
-                try:
-                    fn(pid)
-                except Exception as e:
-                    errors.append(f"{name}: {e}")
+            if target not in (name, "both"):
+                continue
+            if name in done:
+                print(f"{name}: already published at {done[name]['at']}, skipping")
+                continue
+            try:
+                fn(pid)
+            except Exception as e:
+                errors.append(f"{name}: {e}")
         if errors:
             sys.exit("\n".join(errors))
