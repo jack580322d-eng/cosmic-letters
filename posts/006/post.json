@@ -1,0 +1,12 @@
+{
+  "id": "006",
+  "approved": true,
+  "domain": "數學",
+  "music": "",
+  "image1": "數學裡有一種線<br>叫漸近線<div class=\"gap\"></div>有些曲線會越來越靠近它<br>近到幾乎分不出差距<br>卻永遠不會碰到<div class=\"gap\"></div>就像我<br>一直走向你<br>卻始終不敢說出口",
+  "image2": "以 y = 1/x 為例<div class=\"gap\"></div><span class=\"dim\">x 越大，y 就越接近 0</span><div class=\"gap\"></div>x ＝ 10，y ＝ 0.1<br>x ＝ 1000，y ＝ 0.001<div class=\"gap\"></div><div class=\"formula\">y 無限接近 0<br>卻永遠不等於 0</div><div class=\"gap\"></div><span class=\"dim\">所以 x 軸是這條曲線的漸近線<br>靠得再近，也碰不到</span>",
+  "caption": "無限靠近，卻碰不到\n一句用數學寫的情話，關於暗戀。\n漸近線｜以 y = 1/x 為例\n#理科浪漫 #情話 #數學 #暗戀",
+  "threads_main": "數學裡有一種線\n叫漸近線\n\n有些曲線會越來越靠近它\n近到幾乎分不出差距\n卻永遠不會碰到\n\n就像我\n一直走向你\n卻始終不敢說出口",
+  "threads_reply": "漸近線是什麼？\n\n拿 y = 1/x 來說，x 越大，y 越接近 0：x 是 1000 時，y 只剩 0.001。\n\n它可以無限接近 0，卻永遠不會等於 0，所以這條曲線一輩子都碰不到 x 軸。",
+  "topic_tag": "理科浪漫"
+}
