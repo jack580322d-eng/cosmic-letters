@@ -1,17 +1,23 @@
 name: publish
 on:
+  schedule:
+    - cron: "7 14 * * 1,3,5"   # 一、三、五 22:07（台北時間）；GitHub 排程可能晚幾分鐘到幾十分鐘
   workflow_dispatch:
     inputs:
       post_id:
-        description: "posts/ 底下的資料夾名稱，例如 001"
-        required: true
-        default: "001"
+        description: "要發的資料夾編號，例如 002；留空 = 發待發隊列的下一篇"
+        required: false
+        default: ""
       target:
         description: "ig / threads / both"
         required: true
         default: "both"
 permissions:
   contents: write
+  issues: write
+concurrency:
+  group: publish
+  cancel-in-progress: false
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -20,25 +26,52 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Pick post
+        id: pick
+        run: |
+          PID="${{ inputs.post_id }}"
+          if [ -z "$PID" ]; then PID=$(python scripts/publish.py next); fi
+          echo "pid=$PID" >> "$GITHUB_OUTPUT"
+          if [ -z "$PID" ]; then echo "待發隊列是空的（沒有 approved 且未發的稿子），這次不發。"; fi
       - name: Install renderer
+        if: steps.pick.outputs.pid != ''
         run: |
           pip install playwright==1.47.0
           python -m playwright install --with-deps chromium
           mkdir -p fonts
           curl -sSL -o fonts/jf-openhuninn-2.1.ttf https://raw.githubusercontent.com/justfont/open-huninn-font/master/font/jf-openhuninn-2.1.ttf
-      - name: Render images
-        run: python scripts/publish.py render "${{ inputs.post_id }}"
-      - name: Commit images so they have public URLs
+      - name: Render images and commit them so they have public URLs
+        if: steps.pick.outputs.pid != ''
         run: |
+          PID="${{ steps.pick.outputs.pid }}"
+          python scripts/publish.py render "$PID"
           git config user.name "cosmic-letters-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add posts/${{ inputs.post_id }}/*.jpg
-          git commit -m "Render post ${{ inputs.post_id }}" || echo "no changes"
+          git add "posts/$PID/"*.jpg
+          git commit -m "Render post $PID" || echo "images unchanged"
           git push
           sleep 15
       - name: Publish
+        if: steps.pick.outputs.pid != ''
         env:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
           THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
-        run: python scripts/publish.py publish "${{ inputs.post_id }}" "${{ inputs.target }}"
+        run: python scripts/publish.py publish "${{ steps.pick.outputs.pid }}" "${{ inputs.target || 'both' }}"
+      - name: Save publish record
+        if: always() && steps.pick.outputs.pid != ''
+        run: |
+          PID="${{ steps.pick.outputs.pid }}"
+          if [ -f "posts/$PID/status.json" ]; then
+            git add "posts/$PID/status.json"
+            git commit -m "Publish record for post $PID" || echo "no change"
+            git pull --rebase && git push
+          fi
+      - name: Remind to add music
+        if: success() && steps.pick.outputs.pid != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PID="${{ steps.pick.outputs.pid }}"
+          MUSIC=$(python -c "import json;print(json.load(open('posts/$PID/post.json',encoding='utf-8')).get('music') or '還沒選，請挑一首')")
+          gh issue create --title "貼文 $PID 已發布：記得在 IG 加配樂" --body "IG API 不能加音樂，請打開 IG App 幫這篇加上配樂：$MUSIC。加好就把這個 issue 關掉。"
