@@ -1,0 +1,12 @@
+{
+  "id": "007",
+  "approved": true,
+  "domain": "數學",
+  "music": "",
+  "image1": "質數只能被 1<br>和它自己整除<div class=\"gap\"></div>它不能被拆成<br>兩個更小的數相乘<div class=\"gap\"></div>你在我心裡也是這樣<br>沒有人能拆開<br>也沒有人能取代",
+  "image2": "什麼是質數？<div class=\"gap\"></div><span class=\"dim\">大於 1，而且只有 1 和自己兩個因數</span><div class=\"gap\"></div>2、3、5、7、11、13……<div class=\"gap\"></div><div class=\"formula\">每個大於 1 的整數<br>都能唯一拆成質數相乘</div><div class=\"gap\"></div><span class=\"dim\">這叫「算術基本定理」<br>質數就像數字世界的原子</span>",
+  "caption": "你是不能被拆開的唯一\n一句用數學寫的情話，關於唯一。\n質數｜算術基本定理，高斯 1801\n#理科浪漫 #情話 #數學 #質數",
+  "threads_main": "質數只能被 1\n和它自己整除\n\n它不能被拆成\n兩個更小的數相乘\n\n你在我心裡也是這樣\n沒有人能拆開\n也沒有人能取代",
+  "threads_reply": "為什麼說質數是數字的原子？\n\n每個大於 1 的整數，都能拆成質數相乘，而且拆法只有一種，例如 12 ＝ 2 × 2 × 3。\n\n這叫算術基本定理。質數本身，則再也拆不開了。",
+  "topic_tag": "理科浪漫"
+}
