@@ -105,7 +105,7 @@ def publish_ig(pid):
 
 
 def publish_threads(pid):
-    """Threads: the love line is the post itself (text only); the knowledge card goes in a self-reply."""
+    """Threads: the love line is the post itself; a plain-text self-reply explains the knowledge (no images)."""
     post, tok = load(pid), os.environ["THREADS_ACCESS_TOKEN"]
     main = {"media_type": "TEXT", "text": post["threads_main"], "access_token": tok}
     if post.get("topic_tag"):
@@ -114,8 +114,7 @@ def publish_threads(pid):
     time.sleep(10)
     main_id = call("POST", f"{TH}/me/threads_publish", {"creation_id": cid, "access_token": tok})["id"]
     print("Threads main post published:", main_id)
-    reply = {"media_type": "IMAGE", "image_url": image_urls(pid)[1], "text": post["threads_reply"],
-             "reply_to_id": main_id, "access_token": tok}
+    reply = {"media_type": "TEXT", "text": post["threads_reply"], "reply_to_id": main_id, "access_token": tok}
     rid = call("POST", f"{TH}/me/threads", reply)["id"]
     time.sleep(30)
     res = call("POST", f"{TH}/me/threads_publish", {"creation_id": rid, "access_token": tok})
