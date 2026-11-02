@@ -49,6 +49,7 @@ jobs:
           git config user.email "actions@users.noreply.github.com"
           git add "posts/$PID/"*.jpg
           git commit -m "Render post $PID" || echo "images unchanged"
+          git pull --rebase
           git push
           sleep 15
       - name: Publish
@@ -57,7 +58,9 @@ jobs:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
           THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
-        run: python scripts/publish.py publish "${{ steps.pick.outputs.pid }}" "${{ inputs.target || 'both' }}"
+        run: |
+          git pull --rebase   # 拿最新的 status.json，避免同時跑兩次時重複發
+          python scripts/publish.py publish "${{ steps.pick.outputs.pid }}" "${{ inputs.target || 'both' }}"
       - name: Save publish record
         if: always() && steps.pick.outputs.pid != ''
         run: |
