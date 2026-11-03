@@ -1,7 +1,7 @@
 name: publish
 on:
   schedule:
-    - cron: "7 14 * * *"   # 每天 22:07（台北時間）；GitHub 排程可能晚幾分鐘到幾十分鐘
+    - cron: "37 15 * * *"   # 備援：台北 23:37。主觸發是 cron-job.org 每天 22:07；12 小時內發過就跳過
   workflow_dispatch:
     inputs:
       post_id:
@@ -30,6 +30,10 @@ jobs:
         id: pick
         run: |
           PID="${{ inputs.post_id }}"
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            RECENT=$(python -c "import json,glob,datetime as d;n=d.datetime.now(d.timezone.utc);print(any((n-d.datetime.fromisoformat(json.load(open(f)).get('ig',{}).get('at','2000-01-01T00:00:00+00:00'))).total_seconds()<12*3600 for f in glob.glob('posts/*/status.json')))")
+            if [ "$RECENT" = "True" ]; then echo "12 小時內已發過，備援排程跳過。"; echo "pid=" >> "$GITHUB_OUTPUT"; exit 0; fi
+          fi
           if [ -z "$PID" ]; then PID=$(python scripts/publish.py next); fi
           echo "pid=$PID" >> "$GITHUB_OUTPUT"
           if [ -z "$PID" ]; then echo "待發隊列是空的（沒有 approved 且未發的稿子），這次不發。"; fi
