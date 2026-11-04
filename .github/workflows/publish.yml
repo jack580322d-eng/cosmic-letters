@@ -1,7 +1,7 @@
 name: publish
 on:
   schedule:
-    - cron: "37 15 * * *"   # 備援：台北 23:37。主觸發是 cron-job.org 每天 22:07；12 小時內發過就跳過
+    - cron: "37 11 * * *"   # 備援：台北 19:37。主觸發是 cron-job.org 每天 18:00；12 小時內發過就跳過
   workflow_dispatch:
     inputs:
       post_id:
