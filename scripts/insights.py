@@ -79,6 +79,20 @@ for d in sorted((ROOT / "posts").iterdir()):
                 errors.append(f"TH {d.name} {m}: {err}")
     out["posts"][d.name] = row
 
+# every media on the account (catches Reels posted by hand, not in status.json)
+out["all_media"] = []
+if IGH:
+    lst = get(f"{IGH}/{IG_UID}/media", {"fields": "id,media_product_type,media_type,timestamp,caption", "limit": 100}, IG_TOK)
+    if "_error" in lst:
+        errors.append(f"IG media list: {lst['_error']}")
+    for m in lst.get("data", []):
+        row = {"id": m["id"], "type": m.get("media_product_type"), "at": m.get("timestamp"),
+               "caption": (m.get("caption") or "")[:30].replace("\n", " ")}
+        for k in ["reach", "views", "saved", "shares", "likes", "comments", "total_interactions", "ig_reels_avg_watch_time", "ig_reels_video_view_total_time", "profile_visits", "follows"]:
+            v, err = val(get(f"{IGH}/{m['id']}/insights", {"metric": k}, IG_TOK))
+            row[k] = v
+        out["all_media"].append(row)
+
 now = int(time.time())
 since = now - 28 * 86400 + 60
 if IGH:
@@ -117,6 +131,9 @@ L += ["", "## Threads 單篇", "| 篇 | 觀看 | 讚 | 回覆 | 轉發 | 引用 
 for pid, r in out["posts"].items():
     t = r["threads"]
     L.append(f"| {pid} | " + " | ".join(str(t.get(k, "")) for k in TH_METRICS) + " |")
+L += ["", "## 帳號全部貼文", "| 時間 | 類型 | 開頭 | 觸及 | 觀看 | 收藏 | 分享 | 讚 | 平均觀看ms | 主頁 | 追蹤 |", "|" + "---|" * 11]
+for r in out["all_media"]:
+    L.append(f"| {(r['at'] or '')[:16]} | {r['type']} | {r['caption']} | " + " | ".join(str(r.get(k, "")) for k in ["reach", "views", "saved", "shares", "likes", "ig_reels_avg_watch_time", "profile_visits", "follows"]) + " |")
 L += ["", "## 帳號（近 28 天）", "```", json.dumps(out["account"], ensure_ascii=False, indent=1),
       json.dumps(out["threads_account"], ensure_ascii=False, indent=1), "```", "", f"## 錯誤（{len(errors)}）"] + [f"- {e}" for e in errors[:60]]
 md = "\n".join(L)
