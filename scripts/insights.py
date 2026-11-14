@@ -93,6 +93,18 @@ if IGH:
             row[k] = v
         out["all_media"].append(row)
 
+out["threads_all"] = []
+if TH_TOK:
+    url, params = f"{TH}/me/threads", {"fields": "id,text,timestamp,media_type,permalink,is_quote_post", "limit": 100}
+    lst = get(url, params, TH_TOK)
+    if "_error" in lst:
+        errors.append(f"TH list: {lst['_error']}")
+    for m in lst.get("data", []):
+        row = {"id": m["id"], "at": m.get("timestamp"), "type": m.get("media_type"), "text": m.get("text") or "", "permalink": m.get("permalink")}
+        for k in TH_METRICS:
+            row[k] = val(get(f"{TH}/{m['id']}/insights", {"metric": k}, TH_TOK))[0]
+        out["threads_all"].append(row)
+
 now = int(time.time())
 since = now - 28 * 86400 + 60
 if IGH:
